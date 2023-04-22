@@ -1,12 +1,12 @@
 import logging
+from google_images_search import GoogleImagesSearch
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
 from telegram.ext import (
     Updater,
     CommandHandler,
     CallbackQueryHandler,
-    ConversationHandler, filters, MessageHandler
+    ConversationHandler, Filters, MessageHandler
 )
-import inspect
 
 b = []
 a = 1
@@ -26,12 +26,12 @@ def button(update, _):
     variant = query.data
     query.answer()
     if variant == '100':
-        query.edit_message_text(text=f"Об ошибках и пожеланиях Вы можете написать в ЛС @gvetrof")
+        query.edit_message_text(text=f"Об ошибках и пожеланиях Вы можете написать @byoumeiwaaidatta")
     elif variant == '99':
-        query.edit_message_text(text=f"Часто художники не знают где найти референс для нужной ситуации.\nБот будет "
-                                     f"пополняться. Всё будет в одном месте и это очень удобно, ведь Вы сможете "
-                                     f"одновременно и найти идею и узнать о правильном рисовании определенных "
-                                     f"моментов.")
+        query.edit_message_text(f"Привет, я бот-помощник для начинающих и опытных художников.\nМоей основной "
+                                  f"задачей "
+                                  f"является подбор референсов для удобства в рисовании"
+                                  f"\nЧтобы использовать мой функционал введи /search *аргумент*")
 
 
 def say(update, context):
@@ -39,7 +39,7 @@ def say(update, context):
         update.message.reply_text(f"Привет, я бот-помощник для начинающих и опытных художников.\nМоей основной "
                                   f"задачей "
                                   f"является подбор референсов для удобства в рисовании"
-                                  f"\nЧтобы использовать мой функционал введи /help или /start")
+                                  f"\nЧтобы использовать мой функционал введи /search *аргумент*")
 
 
 def get_help(update, context):
@@ -51,514 +51,36 @@ def get_help(update, context):
 
 
 def start(update, _):
-    global a
-    global b
-    if b:
-        for i in b:
-            updater.bot.delete_message(update.effective_chat.id, i)
-    b = []
-    a = 1
     user = update.message.from_user
     logger.info("Пользователь %s начал разговор", user.first_name)
-    keyboard = [
-        [
-            InlineKeyboardButton("Природа", callback_data='nature')
-        ], [InlineKeyboardButton("Цивилизация", callback_data='modern')],
-        [InlineKeyboardButton("Человек и прочее", callback_data='human'),
-         InlineKeyboardButton("Завершить работу", callback_data='stop')],
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    update.message.reply_text('Вы в главном меню!\nПожалуйста, выберите нужный раздел:', reply_markup=reply_markup)
-    return F
+    update.message.reply_text('Чтобы использовать мой функционал введи /search *аргумент*"')
 
 
-def start_over(update, _):
-    global a
-    global b
-    a = 1
-    if b:
-        for i in b:
-            updater.bot.delete_message(update.effective_chat.id, i)
-    b = []
-    query = update.callback_query
-    query.answer()
-    keyboard = [
-        [
-            InlineKeyboardButton("Природа", callback_data='nature')
-        ], [InlineKeyboardButton("Цивилизация", callback_data='modern')],
-        [InlineKeyboardButton("Человек и прочее", callback_data='human'),
-         InlineKeyboardButton("Завершить работу", callback_data='stop')],
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    query.edit_message_text(
-        text='Вы в главном меню!\nПожалуйста, выберите нужный раздел:', reply_markup=reply_markup)
-    return F
+def search(update, context):
+    if context.args:
+        text_caps = ' '.join(context.args).lower()
+        text = 'как нарисовать ' + text_caps
+        gis = GoogleImagesSearch('AIzaSyDFsOELU4yrrOTJM2fa4hvgGD1IgaxgCnQ', '8411be3e0f0464f42')
+        _search_params = {
+            'q': text,
+            'num': 9,
+            'fileType': 'jpg',
+            'imgSize': 'huge|large|medium|',
+        }
+        gis.search(search_params=_search_params)
+        media_group = []
+        for image in gis.results():
+            media_group.append(InputMediaPhoto(media=image.url, caption="Источник:" + image.url))
+        sndmediagroup = updater.bot.send_media_group(chat_id=update.effective_chat.id, media=media_group)
+        for i in range(len(sndmediagroup)):
+            sndmediagroup[i] = sndmediagroup[i].message_id
+        return F
+    else:
 
-
-def modern(update, _):
-    """Показ нового выбора кнопок"""
-    query = update.callback_query
-    query.answer()
-    keyboard = [
-        [
-            InlineKeyboardButton("Техника", callback_data='tech'),
-            InlineKeyboardButton("Фоны", callback_data='city'),
-        ], [InlineKeyboardButton("Главное меню", callback_data='start_over')]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    query.edit_message_text(
-        text="Пожалуйста, выберите нужную подкатегорию:", reply_markup=reply_markup
-    )
-    return F
-
-
-def city(update, _):
-    global a
-    global b
-    if str(update.callback_query.data) == 'citynext':
-        if a < 3:
-            a += 1
-        else:
-            a = 1
-    elif str(update.callback_query.data) == 'cityprev':
-        if a > 1:
-            a -= 1
-        else:
-            a = 3
-    if b:
-        for i in b:
-            updater.bot.delete_message(update.effective_chat.id, i)
-    b = []
-    query = update.callback_query
-    query.answer()
-    keyboard = [
-        [
-            InlineKeyboardButton("Назад", callback_data='cityprev'),
-            InlineKeyboardButton("Вперед", callback_data='citynext'),
-        ],
-        [InlineKeyboardButton("В главное меню", callback_data='start_over')]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    query.edit_message_text(
-        text=f"Надеемся вам понравится!\nСтраница {a} из 3.", reply_markup=reply_markup
-    )
-    ndef = inspect.getframeinfo(
-        inspect.currentframe()).function  # Название функции и папки в которой хранится нужный файл (str)
-    with open(f'{ndef}/{a}/1.png', 'rb') as f1, open(f'{ndef}/{a}/2.png', 'rb') as f2, \
-            open(f'{ndef}/{a}/3.png', 'rb') as f3:
-        b = updater.bot.send_media_group(update.effective_chat.id,
-                                         [InputMediaPhoto(f1), InputMediaPhoto(f2), InputMediaPhoto(f3)])
-    for i in range(len(b)):
-        b[i] = b[i].message_id
-    return F
-
-
-def priroda(update, _):
-    """Показ нового выбора кнопок"""
-    query = update.callback_query
-    query.answer()
-    keyboard = [
-        [
-            InlineKeyboardButton("Животные", callback_data='pzhiv'),
-            InlineKeyboardButton("Фоны", callback_data='pfon'),
-        ], [InlineKeyboardButton("Главное меню", callback_data='start_over')]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    query.edit_message_text(
-        text="Пожалуйста, выберите нужную подкатегорию:", reply_markup=reply_markup
-    )
-    return F
-
-
-def pzhiv(update, _):
-    global a
-    global b
-    if str(update.callback_query.data) == 'pzhivnext':
-        if a < 3:
-            a += 1
-        else:
-            a = 1
-    elif str(update.callback_query.data) == 'pzhivprev':
-        if a > 1:
-            a -= 1
-        else:
-            a = 3
-    if b:
-        for i in b:
-            updater.bot.delete_message(update.effective_chat.id, i)
-    b = []
-    query = update.callback_query
-    query.answer()
-    keyboard = [
-        [
-            InlineKeyboardButton("Назад", callback_data='pzhivprev'),
-            InlineKeyboardButton("Вперед", callback_data='pzhivnext'),
-        ],
-        [InlineKeyboardButton("В главное меню", callback_data='start_over')]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    query.edit_message_text(
-        text=f"Надеемся вам понравится!\nСтраница {a} из 3.", reply_markup=reply_markup
-    )
-    ndef = inspect.getframeinfo(
-        inspect.currentframe()).function  # Название функции и папки в которой хранится нужный файл (str)
-    with open(f'{ndef}/{a}/1.png', 'rb') as f1, open(f'{ndef}/{a}/2.png', 'rb') as f2, \
-            open(f'{ndef}/{a}/3.png', 'rb') as f3:
-        b = updater.bot.send_media_group(update.effective_chat.id,
-                                         [InputMediaPhoto(f1), InputMediaPhoto(f2), InputMediaPhoto(f3)])
-    for i in range(len(b)):
-        b[i] = b[i].message_id
-    return F
-
-
-def pfon(update, _):
-    global a
-    global b
-    if str(update.callback_query.data) == 'pfonnext':
-        if a < 3:
-            a += 1
-        else:
-            a = 1
-    elif str(update.callback_query.data) == 'pfonprev':
-        if a > 1:
-            a -= 1
-        else:
-            a = 3
-    if b:
-        for i in b:
-            updater.bot.delete_message(update.effective_chat.id, i)
-    b = []
-    query = update.callback_query
-    query.answer()
-    keyboard = [
-        [
-            InlineKeyboardButton("Назад", callback_data='pfonprev'),
-            InlineKeyboardButton("Вперед", callback_data='pfonnext'),
-        ],
-        [InlineKeyboardButton("В главное меню", callback_data='start_over')]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    query.edit_message_text(
-        text=f"Надеемся вам понравится!\nСтраница {a} из 3.", reply_markup=reply_markup
-    )
-    ndef = inspect.getframeinfo(
-        inspect.currentframe()).function  # Название функции и папки в которой хранится нужный файл (str)
-    with open(f'{ndef}/{a}/1.png', 'rb') as f1, open(f'{ndef}/{a}/2.png', 'rb') as f2, \
-            open(f'{ndef}/{a}/3.png', 'rb') as f3:
-        b = updater.bot.send_media_group(update.effective_chat.id,
-                                         [InputMediaPhoto(f1), InputMediaPhoto(f2), InputMediaPhoto(f3)])
-    for i in range(len(b)):
-        b[i] = b[i].message_id
-    return F
-
-
-def tech(update, _):
-    global a
-    global b
-    if str(update.callback_query.data) == 'tnext':
-        if a < 3:
-            a += 1
-        else:
-            a = 1
-    elif str(update.callback_query.data) == 'tprev':
-        if a > 1:
-            a -= 1
-        else:
-            a = 3
-    if b:
-        for i in b:
-            updater.bot.delete_message(update.effective_chat.id, i)
-    b = []
-    query = update.callback_query
-    query.answer()
-    keyboard = [
-        [
-            InlineKeyboardButton("Назад", callback_data='tprev'),
-            InlineKeyboardButton("Вперед", callback_data='tnext'),
-        ],
-        [InlineKeyboardButton("В главное меню", callback_data='start_over')]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    query.edit_message_text(
-        text=f"Надеемся вам понравится!\nСтраница {a} из 3.", reply_markup=reply_markup
-    )
-    ndef = inspect.getframeinfo(
-        inspect.currentframe()).function  # Название функции и папки в которой хранится нужный файл (str)
-    with open(f'{ndef}/{a}/1.png', 'rb') as f1, open(f'{ndef}/{a}/2.png', 'rb') as f2, \
-            open(f'{ndef}/{a}/3.png', 'rb') as f3:
-        b = updater.bot.send_media_group(update.effective_chat.id,
-                                         [InputMediaPhoto(f1), InputMediaPhoto(f2), InputMediaPhoto(f3)])
-    for i in range(len(b)):
-        b[i] = b[i].message_id
-    return F
-
-
-def hairs(update, _):
-    global a
-    global b
-    if str(update.callback_query.data) == 'hnext':
-        if a < 3:
-            a += 1
-        else:
-            a = 1
-    elif str(update.callback_query.data) == 'hprev':
-        if a > 1:
-            a -= 1
-        else:
-            a = 3
-    if b:
-        for i in b:
-            updater.bot.delete_message(update.effective_chat.id, i)
-    b = []
-    query = update.callback_query
-    query.answer()
-    keyboard = [
-        [
-            InlineKeyboardButton("Назад", callback_data='hprev'),
-            InlineKeyboardButton("Вперед", callback_data='hnext'),
-        ],
-        [InlineKeyboardButton("В главное меню", callback_data='start_over')]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    query.edit_message_text(
-        text=f"Надеемся вам понравится!\nСтраница {a} из 3.", reply_markup=reply_markup
-    )
-    ndef = inspect.getframeinfo(
-        inspect.currentframe()).function  # Название функции и папки в которой хранится нужный файл (str)
-    with open(f'{ndef}/{a}/1.png', 'rb') as f1, open(f'{ndef}/{a}/2.png', 'rb') as f2, \
-            open(f'{ndef}/{a}/3.png', 'rb') as f3:
-        b = updater.bot.send_media_group(update.effective_chat.id,
-                                         [InputMediaPhoto(f1), InputMediaPhoto(f2), InputMediaPhoto(f3)])
-    for i in range(len(b)):
-        b[i] = b[i].message_id
-    return F
-
-
-def emot(update, _):
-    global a
-    global b
-    if str(update.callback_query.data) == 'emotnext':
-        if a < 3:
-            a += 1
-        else:
-            a = 1
-    elif str(update.callback_query.data) == 'emotprev':
-        if a > 1:
-            a -= 1
-        else:
-            a = 3
-    if b:
-        for i in b:
-            updater.bot.delete_message(update.effective_chat.id, i)
-    b = []
-    query = update.callback_query
-    query.answer()
-    keyboard = [
-        [
-            InlineKeyboardButton("Назад", callback_data='emotprev'),
-            InlineKeyboardButton("Вперед", callback_data='emotnext'),
-        ],
-        [InlineKeyboardButton("В главное меню", callback_data='start_over')]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    query.edit_message_text(
-        text=f"Надеемся вам понравится!\nСтраница {a} из 3.", reply_markup=reply_markup
-    )
-    ndef = inspect.getframeinfo(
-        inspect.currentframe()).function  # Название функции и папки в которой хранится нужный файл (str)
-    with open(f'{ndef}/{a}/1.png', 'rb') as f1, open(f'{ndef}/{a}/2.png', 'rb') as f2, \
-            open(f'{ndef}/{a}/3.png', 'rb') as f3:
-        b = updater.bot.send_media_group(update.effective_chat.id,
-                                         [InputMediaPhoto(f1), InputMediaPhoto(f2), InputMediaPhoto(f3)])
-    for i in range(len(b)):
-        b[i] = b[i].message_id
-    return F
-
-
-def cloths(update, _):
-    global a
-    global b
-    if str(update.callback_query.data) == 'cnext':
-        if a < 3:
-            a += 1
-        else:
-            a = 1
-    elif str(update.callback_query.data) == 'cprev':
-        if a > 1:
-            a -= 1
-        else:
-            a = 3
-    if b:
-        for i in b:
-            updater.bot.delete_message(update.effective_chat.id, i)
-    b = []
-    query = update.callback_query
-    query.answer()
-    keyboard = [
-        [
-            InlineKeyboardButton("Назад", callback_data='cprev'),
-            InlineKeyboardButton("Вперед", callback_data='cnext'),
-        ],
-        [InlineKeyboardButton("В главное меню", callback_data='start_over')]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    query.edit_message_text(
-        text=f"Надеемся вам понравится!\nСтраница {a} из 3.", reply_markup=reply_markup
-    )
-    ndef = inspect.getframeinfo(
-        inspect.currentframe()).function  # Название функции и папки в которой хранится нужный файл (str)
-    with open(f'{ndef}/{a}/1.png', 'rb') as f1, open(f'{ndef}/{a}/2.png', 'rb') as f2, \
-            open(f'{ndef}/{a}/3.png', 'rb') as f3:
-        b = updater.bot.send_media_group(update.effective_chat.id,
-                                         [InputMediaPhoto(f1), InputMediaPhoto(f2), InputMediaPhoto(f3)])
-    for i in range(len(b)):
-        b[i] = b[i].message_id
-    return F
-
-
-def poses(update, _):
-    global a
-    global b
-    if str(update.callback_query.data) == 'pnext':
-        if a < 3:
-            a += 1
-        else:
-            a = 1
-    elif str(update.callback_query.data) == 'pprev':
-        if a > 1:
-            a -= 1
-        else:
-            a = 3
-    if b:
-        for i in b:
-            updater.bot.delete_message(update.effective_chat.id, i)
-    b = []
-    query = update.callback_query
-    query.answer()
-    keyboard = [
-        [
-            InlineKeyboardButton("Назад", callback_data='pprev'),
-            InlineKeyboardButton("Вперед", callback_data='pnext'),
-        ],
-        [InlineKeyboardButton("В главное меню", callback_data='start_over')]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    query.edit_message_text(
-        text=f"Надеемся вам понравится!\nСтраница {a} из 3.", reply_markup=reply_markup
-    )
-    ndef = inspect.getframeinfo(
-        inspect.currentframe()).function  # Название функции и папки в которой хранится нужный файл (str)
-    with open(f'{ndef}/{a}/1.png', 'rb') as f1, open(f'{ndef}/{a}/2.png', 'rb') as f2, \
-            open(f'{ndef}/{a}/3.png', 'rb') as f3:
-        b = updater.bot.send_media_group(update.effective_chat.id,
-                                         [InputMediaPhoto(f1), InputMediaPhoto(f2), InputMediaPhoto(f3)])
-    for i in range(len(b)):
-        b[i] = b[i].message_id
-    return F
-
-
-def bparts(update, _):
-    global a
-    global b
-    if str(update.callback_query.data) == 'bnext':
-        if a < 3:
-            a += 1
-        else:
-            a = 1
-    elif str(update.callback_query.data) == 'bprev':
-        if a > 1:
-            a -= 1
-        else:
-            a = 3
-    if b:
-        for i in b:
-            updater.bot.delete_message(update.effective_chat.id, i)
-    b = []
-    query = update.callback_query
-    query.answer()
-    keyboard = [
-        [
-            InlineKeyboardButton("Назад", callback_data='bprev'),
-            InlineKeyboardButton("Вперед", callback_data='bnext'),
-        ],
-        [InlineKeyboardButton("В главное меню", callback_data='start_over')]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    query.edit_message_text(
-        text=f"Надеемся вам понравится!\nСтраница {a} из 3.", reply_markup=reply_markup
-    )
-    ndef = inspect.getframeinfo(
-        inspect.currentframe()).function  # Название функции и папки в которой хранится нужный файл (str)
-    with open(f'{ndef}/{a}/1.png', 'rb') as f1, open(f'{ndef}/{a}/2.png', 'rb') as f2, \
-            open(f'{ndef}/{a}/3.png', 'rb') as f3:
-        b = updater.bot.send_media_group(update.effective_chat.id,
-                                         [InputMediaPhoto(f1), InputMediaPhoto(f2), InputMediaPhoto(f3)])
-    for i in range(len(b)):
-        b[i] = b[i].message_id
-    return F
-
-
-def sh(update, _):
-    global a
-    global b
-    if str(update.callback_query.data) == 'snext':
-        if a < 3:
-            a += 1
-        else:
-            a = 1
-    elif str(update.callback_query.data) == 'sprev':
-        if a > 1:
-            a -= 1
-        else:
-            a = 3
-    if b:
-        for i in b:
-            updater.bot.delete_message(update.effective_chat.id, i)
-    b = []
-    query = update.callback_query
-    query.answer()
-    keyboard = [
-        [
-            InlineKeyboardButton("Назад", callback_data='sprev'),
-            InlineKeyboardButton("Вперед", callback_data='snext'),
-        ],
-        [InlineKeyboardButton("В главное меню", callback_data='start_over')]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    query.edit_message_text(
-        text=f"Надеемся вам понравится!\nСтраница {a} из 3.", reply_markup=reply_markup
-    )
-    ndef = inspect.getframeinfo(
-        inspect.currentframe()).function  # Название функции и папки в которой хранится нужный файл (str)
-    with open(f'{ndef}/{a}/1.png', 'rb') as f1, open(f'{ndef}/{a}/2.png', 'rb') as f2, \
-            open(f'{ndef}/{a}/3.png', 'rb') as f3:
-        b = updater.bot.send_media_group(update.effective_chat.id,
-                                         [InputMediaPhoto(f1), InputMediaPhoto(f2), InputMediaPhoto(f3)])
-    for i in range(len(b)):
-        b[i] = b[i].message_id
-    return F
-
-
-def human(update, _):
-    query = update.callback_query
-    query.answer()
-    keyboard = [
-        [
-            InlineKeyboardButton("Эмоции", callback_data='emot'),
-            InlineKeyboardButton("Волосы", callback_data='hairs'),
-            InlineKeyboardButton("Одежда", callback_data='cloths'),
-        ],
-        [InlineKeyboardButton("Позы", callback_data='poses'),
-         InlineKeyboardButton("Части тела", callback_data='bparts')],
-        [InlineKeyboardButton("Шаблоны/Идеи", callback_data='sh')],
-        [InlineKeyboardButton("В меню", callback_data='start_over')
-         ]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    query.edit_message_text(
-        text="Пожалуйста, выберите нужную подкатегорию:", reply_markup=reply_markup
-    )
-    return F
+        context.bot.send_message(chat_id=update.effective_chat.id,
+                                 text='Не указан запрос')
+        context.bot.send_message(chat_id=update.effective_chat.id,
+                                 text='Попробуйте: /search argument')
 
 
 def end(update, _):
@@ -580,45 +102,8 @@ if __name__ == '__main__':
         entry_points=[CommandHandler('start', start)],
         states={
             F: [
-                CallbackQueryHandler(priroda, pattern='^' + 'nature' + '$'),
-                CallbackQueryHandler(modern, pattern='^' + 'modern' + '$'),
-                CallbackQueryHandler(tech, pattern='^' + 'tech' + '$'),
-                CallbackQueryHandler(human, pattern='^' + 'human' + '$'),
-                CallbackQueryHandler(start_over, pattern='^' + 'start_over' + '$'),
-                CallbackQueryHandler(pfon, pattern='^' + 'pfon' + '$'),
-                CallbackQueryHandler(pzhiv, pattern='^' + 'pzhiv' + '$'),
-                CallbackQueryHandler(pzhiv, pattern='^' + 'pzhivnext' + '$'),
-                CallbackQueryHandler(emot, pattern='^' + 'emot' + '$'),
-                CallbackQueryHandler(bparts, pattern='^' + 'bparts' + '$'),
-                CallbackQueryHandler(bparts, pattern='^' + 'bnext' + '$'),
-                CallbackQueryHandler(bparts, pattern='^' + 'bprev' + '$'),
-                CallbackQueryHandler(poses, pattern='^' + 'poses' + '$'),
-                CallbackQueryHandler(poses, pattern='^' + 'pnext' + '$'),
-                CallbackQueryHandler(poses, pattern='^' + 'pprev' + '$'),
-                CallbackQueryHandler(city, pattern='^' + 'city' + '$'),
-                CallbackQueryHandler(cloths, pattern='^' + 'cloths' + '$'),
-                CallbackQueryHandler(cloths, pattern='^' + 'cnext' + '$'),
-                CallbackQueryHandler(cloths, pattern='^' + 'cprev' + '$'),
-                CallbackQueryHandler(sh, pattern='^' + 'sprev' + '$'),
-                CallbackQueryHandler(sh, pattern='^' + 'snext' + '$'),
-                CallbackQueryHandler(sh, pattern='^' + 'sh' + '$'),
-                CallbackQueryHandler(hairs, pattern='^' + 'hairs' + '$'),
-                CallbackQueryHandler(hairs, pattern='^' + 'hnext' + '$'),
-                CallbackQueryHandler(hairs, pattern='^' + 'hprev' + '$'),
-                CallbackQueryHandler(city, pattern='^' + 'citynext' + '$'),
-                CallbackQueryHandler(city, pattern='^' + 'cityprev' + '$'),
-                CallbackQueryHandler(emot, pattern='^' + 'emotnext' + '$'),
-                CallbackQueryHandler(emot, pattern='^' + 'emotprev' + '$'),
-                CallbackQueryHandler(pzhiv, pattern='^' + 'pzhivprev' + '$'),
-                CallbackQueryHandler(pfon, pattern='^' + 'pfonnext' + '$'),
-                CallbackQueryHandler(pfon, pattern='^' + 'pfonprev' + '$'),
-                CallbackQueryHandler(tech, pattern='^' + 'tnext' + '$'),
-                CallbackQueryHandler(tech, pattern='^' + 'tprev' + '$'),
                 CallbackQueryHandler(end, pattern='^' + 'stop' + '$')
-            ],
-            S: [
-
-            ],
+            ]
         },
         fallbacks=[CommandHandler('start', start), CommandHandler('help', get_help)],
     )
@@ -626,8 +111,10 @@ if __name__ == '__main__':
     updater.dispatcher.add_handler(CallbackQueryHandler(button))
 
     updater.dispatcher.add_handler(CommandHandler('help', get_help))
+    caps_handler = CommandHandler('search', search)
+    updater.dispatcher.add_handler(caps_handler)
 
-updater.dispatcher.add_handler(MessageHandler(filters.text, say))
+updater.dispatcher.add_handler(MessageHandler(Filters.text, say))
 
 updater.start_polling()
 updater.idle()
