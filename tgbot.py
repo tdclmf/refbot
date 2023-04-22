@@ -8,16 +8,13 @@ from telegram.ext import (
     ConversationHandler, Filters, MessageHandler
 )
 
-b = []
-a = 1
-# Ведение журнала логов
+
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO
 )
 
 logger = logging.getLogger(__name__)
 
-F, S = range(2)
 updater = Updater("5967081389:AAFT5LDp9ppIUfGYgBcv7SGzxx3spo4BwC0")
 
 
@@ -81,20 +78,6 @@ def search(update, context):
                                  text='Не указан запрос')
         context.bot.send_message(chat_id=update.effective_chat.id,
                                  text='Попробуйте: /search argument')
-
-
-def end(update, _):
-    global b
-    global a
-    a = 1
-    query = update.callback_query
-    query.answer()
-    if b:
-        for i in b:
-            updater.bot.delete_message(update.effective_chat.id, i)
-    b = []
-    query.edit_message_text(text="Удачи! Надеемся, что помогли Вам!")
-    return ConversationHandler.END
 
 
 if __name__ == '__main__':
