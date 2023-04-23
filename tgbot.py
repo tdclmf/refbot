@@ -80,7 +80,6 @@ def search(update, context):
 
 
 if __name__ == '__main__':
-    updater.dispatcher.add_handler(conv_handler)
     updater.dispatcher.add_handler(CallbackQueryHandler(button))
     updater.dispatcher.add_handler(CommandHandler('help', get_help))
     caps_handler = CommandHandler('search', search)
