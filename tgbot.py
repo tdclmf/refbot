@@ -80,18 +80,8 @@ def search(update, context):
 
 
 if __name__ == '__main__':
-    conv_handler = ConversationHandler(
-        entry_points=[CommandHandler('start', start)],
-        states={
-            F: [
-                CallbackQueryHandler(end, pattern='^' + 'stop' + '$')
-            ]
-        },
-        fallbacks=[CommandHandler('start', start), CommandHandler('help', get_help)],
-    )
     updater.dispatcher.add_handler(conv_handler)
     updater.dispatcher.add_handler(CallbackQueryHandler(button))
-
     updater.dispatcher.add_handler(CommandHandler('help', get_help))
     caps_handler = CommandHandler('search', search)
     updater.dispatcher.add_handler(caps_handler)
