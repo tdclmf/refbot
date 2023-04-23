@@ -71,7 +71,6 @@ def search(update, context):
         sndmediagroup = updater.bot.send_media_group(chat_id=update.effective_chat.id, media=media_group)
         for i in range(len(sndmediagroup)):
             sndmediagroup[i] = sndmediagroup[i].message_id
-        return F
     else:
 
         context.bot.send_message(chat_id=update.effective_chat.id,
